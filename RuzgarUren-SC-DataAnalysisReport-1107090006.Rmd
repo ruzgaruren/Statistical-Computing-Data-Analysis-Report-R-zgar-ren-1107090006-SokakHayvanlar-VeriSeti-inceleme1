@@ -1,0 +1,295 @@
+---
+title: Statistical Computing Data Analysis Report Rüzgar Üren 1107090006 Sokak Hayvanları
+  Veri Seti incelemesi
+author: "RÜZGAR ÜREN"
+date: "11 06 2021"
+output: html_document
+---
+
+
+---
+title: "Statistical Computing Data Analysis Report"
+author: "Rüzgar Üren- Sokak Hayvanları Veri Seti incelemesi"
+1107090006"
+date: 
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+  pdf_document: default
+---
+
+```{r, message=FALSE, include=TRUE}
+library(vcd)
+library(plyr)
+library(ggplot2)
+library(dplyr)
+library(car)
+library(psych)
+```
+
+
+
+Data upload processes
+
+```{r, include=TRUE}
+kisirlastirilan <- read.csv("kisirlastirilan.csv")
+muayene <- read.csv("muayene.csv")
+mudahale <- read.csv("müdehale.csv")
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Operations to change the type of variables in the sterilized stray animal dataset
+
+```{r}
+#Karakter->Factor
+kisirlastirilan$ILCE<-as.factor(kisirlastirilan$ILCE)
+#Karakter->Factor
+kisirlastirilan$MAHALLE<-as.factor(kisirlastirilan$MAHALLE)
+#Karakter->Factor
+kisirlastirilan$KISIRLASTIRILAN_HAYVAN_NOKTALARI<-as.factor(kisirlastirilan$KISIRLASTIRILAN_HAYVAN_NOKTALARI)
+#Integer->Factor
+kisirlastirilan$YIL<-as.factor(kisirlastirilan$YIL)
+#Integer->Factor
+kisirlastirilan$AY<-as.factor(kisirlastirilan$AY)
+```
+
+
+
+Data aggregation processes to compare Inspection and Intervented stray animals
+
+```{r}
+a <- cbind(muayene$YIL,muayene$AY,muayene$ADET,mudahale$ADET)
+Birlestirilmis.Veri <- data.frame(a)
+```
+
+Converting the year from an integer to a factor in the combined data
+
+```{r}
+names(Birlestirilmis.Veri)[1] <- "Yil"
+names(Birlestirilmis.Veri)[2] <- "Ay"
+names(Birlestirilmis.Veri)[3] <- "Muayene_Adedi"
+names(Birlestirilmis.Veri)[4] <- "Mudahale_Adedi"
+```
+
+Assigning names to variables in the combined data
+
+```{r}
+#Integer->Factor
+Birlestirilmis.Veri$Yil<-as.factor(Birlestirilmis.Veri$Yil)
+```
+
+1.Data Visualization and Descriptive Statistics 
+
+Let's examine the relationship between the number of examinations and interventions for stray animals separately for each year, graphically.
+
+```{r}
+ggplot(Birlestirilmis.Veri,aes(Muayene_Adedi,Mudahale_Adedi, color=Yil)) +
+  geom_point() +
+  facet_wrap(~Yil)+
+  xlab("Muayene SayÄ±sÄ±") +
+  ylab("MÃ¼dahalae SayÄ±sÄ±") +
+  ggtitle("YÄ±la GÃ¶re Muayene ve MÃ¼dahale SayÄ±larÄ±")
+```
+
+
+
+According to this graph, the number of interventions to stray animals in 2020 is more than the number of interventions to stray animals in 2021.
+
+
+
+
+
+Let's examine the sterilized stray animals data set on the bar graph according to the district and number.
+
+```{r}
+ggplot(kisirlastirilan,aes(x=ILCE,y=ADET))+geom_bar(stat = "identity",fill="Blue")
+```
+
+
+
+According to the bar graph, stray animals were sterilized the most in Konak and the least in Bornova.
+
+Let's examine the descriptive statistics for all data sets.
+
+```{r}
+describe(kisirlastirilan)
+describe(muayene)
+describe(mudahale)
+```
+
+2. Confidence Interval(güven Aralığı)
+
+Let's examine the confidence interval of the menstrual variable in the examined stray animals dataset. For this, let's calculate the mean and standard deviation of the menstrual variable.
+
+```{r}
+n=16
+muayene_adet_ort=mean(muayene$ADET)
+muayene_adet_sd=sd(muayene$ADET)
+cbind(muayene_adet_ort,muayene_adet_sd)
+error <- qnorm(0.975)*muayene_adet_sd/sqrt(n)
+alt_sinir <- muayene_adet_ort-error
+üst_sinir <- muayene_adet_ort+error
+cbind(alt_sinir,üst_sinir)
+```
+
+
+
+The mean of the menstrual variable was found to be 880, and the 95% confidence interval [815-945]. In other words, it varies in the average [815-945] range in 95 out of 100 repeated processes.
+
+Let's examine the confidence interval of the number variable in the stray animals intervened dataset. For this, let's calculate the mean and standard deviation of the menstrual variable.
+
+```{r}
+n=16
+mudahale_adet_ort=mean(mudahale$ADET)
+mudahale_adet_sd=sd(mudahale$ADET)
+cbind(mudahale_adet_ort,mudahale_adet_sd)
+error <- qnorm(0.975)*mudahale_adet_sd/sqrt(n)
+alt_sinir <- mudahale_adet_ort-error
+üst_sinir <- mudahale_adet_ort+error
+cbind(alt_sinir,üst_sinir)
+```
+
+The mean of the menstrual variable was found to be 938, and the 95% confidence interval [824-1053]. In other words, in 95 of the 100 repeated processes, the average changes in the range of [824-1053].
+
+
+
+3.Hypothesis Tests
+
+Let's examine whether there is a relationship between the spayed animal point and the year in the sterilized stray animals dataset.
+
+H0: There is no relationship between the spayed animal point and the year.
+H1: There is a relationship between the spayed animal point and the year.
+
+Let's use the chi-square (ki-kare) test for this.
+
+```{r}
+ct=table(kisirlastirilan$KISIRLASTIRILAN_HAYVAN_NOKTALARI,kisirlastirilan$YIL)
+print(ct)
+chisq.test(ct)
+assocstats(ct)
+```
+
+According to the results of the chi-square analysis, p <0.05 was found to be smaller. H0 is rejected. That is, there is a relationship between the spayed animal points and the year. The strength of this relationship is Cramer's V = 0.5 However, this test result is not very reliable as there are values less than 5 in the crosstab.
+
+
+Let's examine whether there is a significant difference between the averages of the stray animals examined and treated.
+
+H0: There is no significant difference between the examined and treated stray animals.
+H1: There is a significant difference between the examined and treated stray animals.
+
+Let's use the independent sample t-test for this.
+
+```{r}
+#Normallik Testi
+shapiro.test(muayene$ADET)
+shapiro.test(mudahale$ADET)
+
+
+#Varyans HomojenliÄŸi Testi
+birlestirilmis.degisken=c(muayene$ADET,mudahale$ADET)
+muayene.uzunluk =length(muayene$ADET)
+mudahale.uzunluk=length(mudahale$ADET)
+muayene.belirtec=rep(1,muayene.uzunluk)
+mudahale.belirtec=rep(2,mudahale.uzunluk)
+bileske.belirtec=c(muayene.belirtec,mudahale.belirtec)
+test = leveneTest(birlestirilmis.degisken,bileske.belirtec)
+print(test)
+
+#BaÄŸÄ±msÄ±z Ã–rneklem T Testi
+ttest=t.test(muayene$ADET,mudahale$ADET,var.equal = TRUE)
+if(ttest$p.value<0.05) {
+  print("Muayene ve mÃ¼dehale edilen sokak hayvanlarÄ± arasÄ±nda anlamlÄ± farklÄ±lÄ±k vardÄ±r.")
+  print(ttest)
+} else {
+  print("Muayene ve mÃ¼dehale edilen sokak hayvanlarÄ± arasÄ±nda anlamlÄ± farklÄ±lÄ±k yoktur.")
+  print(ttest)
+}
+```
+
+There are necessary prerequisites for independent sample t-testing. One of them is the normal distribution of the data and the other is that the variances are homogeneous. When the distribution of the data was examined with the shapiro-wilk test, it was seen that the number of variables of the examination data showed a normal distribution (p>0.05), and the number of variables of the intervention variable did not show a normal distribution (p<0.05). It was accepted that it showed normal distribution.) Levene test was used to examine whether the variance homogeneity condition was met. As a result of the Levene test, it was observed that the variance homogeneity condition was met (p>0.05). As a result of the t-test performed after testing the preconditions, it was observed that there was no significant difference between the examined and intervened stray animals (p>0.05). In other words, H0 was accepted.
+
+
+
+
+
+Let's examine whether the number of sterilized stray animals differs according to the district.
+
+H0: The number of sterilized stray animals does not differ according to the district.
+H1: The number of sterilized stray animals varies according to the district.
+
+Let's use the one-way ANOVA test for this.
+
+```{r}
+#Normallik Testi
+shapiro.test(kisirlastirilan$ADET)
+
+#Varyans Homojenligi Testi
+leveneTest(kisirlastirilan$ADET,kisirlastirilan$ILCE)
+
+#Tek YÃ¶nlÃ¼ ANOVA Testi
+anova = aov(ADET~ILCE, data = kisirlastirilan)
+summary(anova)
+```
+
+There are prerequisites for performing a one-way anova test. One of them is the normal distribution of the data and the other is that the variances are homogeneous. Since these preconditions were examined, it was seen that the data did not show normal distribution (p<0.05) and the variance homogeneity condition was not met (p<0.05).
+
+As a result of the anova test performed after examining the preconditions, it was observed that the number of sterilized animals differed significantly according to the district (p<0.05).
+
+Bonferroni pairwise comparison test was used to examine from which districts this difference originated.
+
+```{r}
+ikili.karsilastirma = pairwise.t.test(kisirlastirilan$ADET, kisirlastirilan$ILCE,
+                                      p.adjust.method = "bonferroni",
+                                      pool.sd = FALSE)
+print(ikili.karsilastirma)
+```
+
+As a result of the Bonferroni comparison, it was seen that the average number of sterilized animals was different from each other in all districts.
+
+
+
+
+
+4.ANOVA or Regression
+Let's examine whether the number of sterilized stray animals differs according to the months.
+H0: The number of sterilized stray animals does not differ by month.
+H1: The number of sterilized stray animals varies by month.
+
+Let's use the one-way ANOVA test for this.
+
+```{r}
+#Normallik Testi
+shapiro.test(kisirlastirilan$ADET)
+
+#Varyans Homojenligi Testi
+leveneTest(kisirlastirilan$ADET,kisirlastirilan$AY)
+
+#Tek YÃ¶nlÃ¼ ANOVA Testi
+anova.sonucu = aov(ADET~AY, data = kisirlastirilan)
+summary(anova.sonucu)
+```
+
+There are prerequisites for performing a one-way anova test. One of them is the normal distribution of the data and the other is that the variances are homogeneous. When these preconditions were examined, it was seen that the data did not show normal distribution (p<0.05), but the variance homogeneity condition was met (p>0.05). (It was accepted that the data showed normal distribution according to this test.)
+
+As a result of the anova test performed after examining the preconditions, it was observed that the number of sterilized animals did not differ significantly by month (p>0.05). That is, H0 is accepted.
+
+
+#RÜZGAR üREN
+#1107090006
+#MUĞLA SITKI KOÇMAN ÜNİVERSİTESİ
+#LECTURER: Dr. ZEYNEP FİLİZ EREN DOĞU
+
+
+
+
+
+
+
+
+
+
+
+
+#by Rüzgar ÜREN ... 
